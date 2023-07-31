@@ -50,7 +50,7 @@ internal class AstParser
             var op = GetCurrent();
             EatToken();
             var right = ParseTerm();
-            expr = new Node(op, op.Type, expr, right);
+            expr = new Node(op, expr, right);
         }
 
         return expr;
@@ -65,7 +65,7 @@ internal class AstParser
             var op = GetCurrent();
             EatToken();
             var right = ParseFactor();
-            term = new Node(op, op.Type, term, right);
+            term = new Node(op, term, right);
         }
 
         return term;
@@ -77,7 +77,7 @@ internal class AstParser
         if (token.Type == TokenType.Variable || token.Type == TokenType.Literal)
         {
             EatToken();
-            return new Node(token, token.Type);
+            return new Node(token);
         }
 
         if (token.Type == TokenType.Parenthesis && token.Value == "(")
