@@ -4,6 +4,22 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Title>Adonix.StringToLinq</Title>
+    <Company>Adonix</Company>
+    <Authors>Adonix</Authors>
+    <Product>StringToLinq</Product>
+    <Copyright>MIT</Copyright>
+    <Description>StringToLinq is a simple .NET library that transforms string expressions into Linq Expressions. This library enables dynamic generation of complex Linq queries from string inputs, providing a level of flexibility for Linq-based querying.</Description>
+    <RepositoryUrl>https://github.com/Adonix-com-au/StringToLinq</RepositoryUrl>
+    <PackageTags>StringToLinq</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>
