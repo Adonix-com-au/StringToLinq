@@ -42,14 +42,11 @@ internal static class ExpressionBuilder
             var parts = node.Left.Token.Value.Split('.');
             Expression propertyAccess = param;
 
-            // Loop through the parts to access each level of the property.
             foreach (var part in parts)
             {
                 propertyAccess = Expression.Property(propertyAccess, part);
             }
 
-            // If we're processing an operator token, check if the right operand is a raw literal value.
-            // If it is, convert it to the correct type.
             if (right is ConstantExpression constant)
             {
                 right = ToExprConstant(propertyAccess.Type, constant.Value);
@@ -74,10 +71,19 @@ internal static class ExpressionBuilder
                 return Expression.LessThanOrEqual(left, right);
             case "ge":
                 return Expression.GreaterThanOrEqual(left, right);
-            // Add other cases for additional operators as needed.
+            case "in":
+                return Contains(left, right);
             default:
                 throw new NotSupportedException($"Operator '{node.Token.Value}' is not supported.");
         }
+    }
+
+    private static Expression Contains(Expression left, Expression right)
+    {
+        var propertyType = left.Type;
+        var containsMethod = propertyType.GetMethod("Contains", new[] {typeof(string)});
+        var call = Expression.Call(left, containsMethod, right);
+        return Expression.Call(left, containsMethod, right);
     }
 
     private static Expression ToExprConstant(Type prop, object value)

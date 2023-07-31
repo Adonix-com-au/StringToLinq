@@ -26,6 +26,16 @@ public class ExpressionTest
     }
 
     [Fact]
+    public void TestIn()
+    {
+        var query = "Name in \"Alex\"";
+        var predicate = StringExpression.ToPredicate<Employee>(query);
+        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
+
+        Assert.Equal(1, results.Count());
+    }
+
+    [Fact]
     public void TestGroupComplex()
     {
         var query = "Age eq 24 or (Name eq \"Amy Richards\" and Department eq \"CEO\")";
