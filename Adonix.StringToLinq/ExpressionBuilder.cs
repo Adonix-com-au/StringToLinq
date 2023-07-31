@@ -12,6 +12,11 @@ internal static class ExpressionBuilder
 
     private static Expression GenerateExpressionFromNode<T>(Node node, ParameterExpression param)
     {
+        if (node == null)
+        {
+            return null;
+        }
+
         if (node.Token.Type == TokenType.Literal)
         {
             if (double.TryParse(node.Token.Value, out var num))
@@ -37,45 +42,73 @@ internal static class ExpressionBuilder
         var left = GenerateExpressionFromNode<T>(node.Left, param);
         var right = GenerateExpressionFromNode<T>(node.Right, param);
 
-        if (node.Token.Type == TokenType.Operator)
+        if (node.Token.Type == TokenType.Operator || node.Token.Type == TokenType.Logical)
         {
-            var parts = node.Left.Token.Value.Split('.');
-            Expression propertyAccess = param;
-
-            foreach (var part in parts)
+            if (left.Type != right.Type && node.Right.Token.Type == TokenType.Literal)
             {
-                propertyAccess = Expression.Property(propertyAccess, part);
+                right = ToExprConstant(node.Right.Token.Value, left);
             }
 
-            if (right is ConstantExpression constant)
+            switch (node.Token.Value)
             {
-                right = ToExprConstant(propertyAccess.Type, constant.Value);
+                case "and":
+                    return Expression.AndAlso(left, right);
+                case "or":
+                    return Expression.OrElse(left, right);
+                case "eq":
+                    return Expression.Equal(left, right);
+                case "ne":
+                    return Expression.NotEqual(left, right);
+                case "lt":
+                    return Expression.LessThan(left, right);
+                case "gt":
+                    return Expression.GreaterThan(left, right);
+                case "le":
+                    return Expression.LessThanOrEqual(left, right);
+                case "ge":
+                    return Expression.GreaterThanOrEqual(left, right);
+                case "in":
+                    return Contains(left, right);
+                default:
+                    throw new NotSupportedException($"Operator '{node.Token.Value}' is not supported.");
             }
         }
 
-        switch (node.Token.Value)
+        if (node.Token.Type == TokenType.Arithmetic)
         {
-            case "and":
-                return Expression.AndAlso(left, right);
-            case "or":
-                return Expression.OrElse(left, right);
-            case "eq":
-                return Expression.Equal(left, right);
-            case "ne":
-                return Expression.NotEqual(left, right);
-            case "lt":
-                return Expression.LessThan(left, right);
-            case "gt":
-                return Expression.GreaterThan(left, right);
-            case "le":
-                return Expression.LessThanOrEqual(left, right);
-            case "ge":
-                return Expression.GreaterThanOrEqual(left, right);
-            case "in":
-                return Contains(left, right);
-            default:
-                throw new NotSupportedException($"Operator '{node.Token.Value}' is not supported.");
+            if (left.Type != right.Type)
+            {
+                if (left.Type == typeof(int) && right.Type == typeof(double))
+                {
+                    left = Expression.Convert(left, typeof(double));
+                }
+                else if (right.Type == typeof(int) && left.Type == typeof(double))
+                {
+                    right = Expression.Convert(right, typeof(double));
+                }
+            }
+
+            switch (node.Token.Value)
+            {
+                case "add":
+                    return Expression.Add(left, right);
+                case "sub":
+                    return Expression.Subtract(left, right);
+                case "mul":
+                    return Expression.Multiply(left, right);
+                case "div":
+                    return Expression.Divide(left, right);
+                case "divby":
+                    return Expression.Divide(Expression.Convert(left, typeof(decimal)),
+                        Expression.Convert(right, typeof(decimal)));
+                case "mod":
+                    return Expression.Modulo(left, right);
+                default:
+                    throw new ArgumentException($"Unsupported operator {node.Token.Value}");
+            }
         }
+
+        return null;
     }
 
     private static Expression Contains(Expression left, Expression right)
@@ -86,18 +119,33 @@ internal static class ExpressionBuilder
         return Expression.Call(left, containsMethod, right);
     }
 
-    private static Expression ToExprConstant(Type prop, object value)
+    private static ConstantExpression ToExprConstant(string value, Expression expr)
     {
-        object val;
-        if (prop == typeof(Guid))
+        var type = expr.Type;
+        object val = value;
+        if (type == typeof(int))
         {
-            val = Guid.Parse((string) value);
-        }
-        else
-        {
-            val = Convert.ChangeType(value, prop);
+            return Expression.Constant(Convert.ToInt32(value), typeof(int));
         }
 
-        return Expression.Constant(val);
+        if (type == typeof(string))
+        {
+            return Expression.Constant(value, typeof(string));
+        }
+
+        if (type == typeof(int))
+        {
+            val = int.Parse(value);
+        }
+        else if (type == typeof(double))
+        {
+            val = double.Parse(value);
+        }
+        else if (type == typeof(bool))
+        {
+            val = bool.Parse(value);
+        }
+
+        return Expression.Constant(val, type);
     }
 }

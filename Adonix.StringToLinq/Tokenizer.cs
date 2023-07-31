@@ -6,6 +6,7 @@ internal static class Tokenizer
     {
         string[] comparisonOperators = {"eq", "ne", "lt", "gt", "le", "ge", "in", "has"};
         string[] logicalOperators = {"and", "or", "and"};
+        string[] arithmeticOperators = {"add", "sub", "mul", "div", "divby", "mod"};
 
         var tokens = new List<Token>();
 
@@ -63,6 +64,14 @@ internal static class Tokenizer
             else if (logicalOperators.Contains(token))
             {
                 tokens.Add(new Token {Type = TokenType.Logical, Value = token});
+            }
+            else if (arithmeticOperators.Contains(token))
+            {
+                tokens.Add(new Token {Type = TokenType.Arithmetic, Value = token});
+            }
+            else if (double.TryParse(token, out var _))
+            {
+                tokens.Add(new Token {Type = TokenType.Literal, Value = token});
             }
             else if (double.TryParse(token, out var number))
             {

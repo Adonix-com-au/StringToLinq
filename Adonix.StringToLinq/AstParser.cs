@@ -1,9 +1,12 @@
-﻿namespace Adonix.StringToLinq;
+﻿using Microsoft.Extensions.Logging;
+
+namespace Adonix.StringToLinq;
 
 internal class AstParser
 {
     private readonly List<Token> _tokens;
     private int _index;
+    private Node _root;
 
     public AstParser(List<Token> tokens)
     {
@@ -38,7 +41,8 @@ internal class AstParser
 
     public Node Parse()
     {
-        return ParseExpression();
+        _root = ParseExpression();
+        return _root;
     }
 
     private Node ParseExpression()
@@ -58,17 +62,32 @@ internal class AstParser
 
     private Node ParseTerm()
     {
-        var term = ParseFactor();
+        var term = ParseArithmetic();
 
         while (GetCurrent().Type == TokenType.Operator)
         {
             var op = GetCurrent();
             EatToken();
-            var right = ParseFactor();
+            var right = ParseArithmetic();
             term = new Node(op, term, right);
         }
 
         return term;
+    }
+
+    private Node ParseArithmetic()
+    {
+        var factor = ParseFactor();
+
+        while (GetCurrent().Type == TokenType.Arithmetic)
+        {
+            var op = GetCurrent();
+            EatToken();
+            var right = ParseFactor();
+            factor = new Node(op, factor, right);
+        }
+
+        return factor;
     }
 
     private Node ParseFactor()
@@ -93,4 +112,33 @@ internal class AstParser
 
         throw new Exception("Expected a variable, literal or parenthesis, got " + GetCurrent().Type);
     }
+
+#if DEBUG
+    public void Print(ILogger logger)
+    {
+        Print(_root, logger);
+    }
+
+    private void Print(Node node, ILogger logger, string indent = "")
+    {
+        if (node == null)
+        {
+            return;
+        }
+
+        logger.LogInformation($"{indent}Node: {node.Token.Value}");
+
+        if (node.Left != null)
+        {
+            logger.LogInformation($"{indent}  Left:");
+            Print(node.Left, logger, indent + "    ");
+        }
+
+        if (node.Right != null)
+        {
+            logger.LogInformation($"{indent}  Right:");
+            Print(node.Right, logger, indent + "    ");
+        }
+    }
+#endif
 }
