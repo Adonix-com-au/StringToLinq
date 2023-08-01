@@ -108,7 +108,7 @@ internal class AstParser
 
         EatToken(); // Eat the ')' token
 
-        return new Node(functionToken) {Args = args};
+        return new Node(functionToken, args.ToArray());
     }
 
     private Node ParseFactor()
@@ -154,10 +154,10 @@ internal class AstParser
 
         logger.LogInformation($"{indent}Node: {node.Token.Value}");
 
-        if (node.Args.Count > 0)
+        if (node.Children.Length > 0)
         {
-            var value = $"{indent}  Args: [";
-            foreach (var arg in node.Args)
+            var value = $"{indent}  Children: [";
+            foreach (var arg in node.Children)
             {
                 value += $"{arg.Token.Value} ";
             }
