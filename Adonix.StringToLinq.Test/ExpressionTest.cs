@@ -25,6 +25,26 @@ public class ExpressionTest
     }
 
     [Fact]
+    public void TestFunctionContains()
+    {
+        var query = "contains(Name, \"Alex\")";
+        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
+        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
+        Assert.Equal(1, results.Count());
+        Assert.Equal("Alex Mitrakis", results.FirstOrDefault().Name);
+    }
+
+    [Fact]
+    public void TestFunctionStartsWith()
+    {
+        var query = "startswith(Name, \"Alex\")";
+        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
+        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
+        Assert.Equal(1, results.Count());
+        Assert.Equal("Alex Mitrakis", results.FirstOrDefault().Name);
+    }
+
+    [Fact]
     public void TestNotEqual()
     {
         var query = "Name ne \"Alex Mitrakis\"";

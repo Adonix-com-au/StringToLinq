@@ -6,6 +6,8 @@ internal enum TokenType
     Arithmetic,
     Logical,
     Literal,
+    Function,
+    Comma,
     Variable,
     Parenthesis,
     EOF

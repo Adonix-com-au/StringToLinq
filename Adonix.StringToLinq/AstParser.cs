@@ -90,6 +90,27 @@ internal class AstParser
         return factor;
     }
 
+    private Node ParseFunctionCall()
+    {
+        var functionToken = GetCurrent();
+        EatToken(); // Eat the function token
+        EatToken(); // Eat the '(' token
+
+        var args = new List<Node>();
+        while (GetCurrent().Type != TokenType.Parenthesis || GetCurrent().Value != ")")
+        {
+            args.Add(ParseExpression());
+            if (GetCurrent().Type == TokenType.Comma)
+            {
+                EatToken(); // Eat the comma
+            }
+        }
+
+        EatToken(); // Eat the ')' token
+
+        return new Node(functionToken) {Args = args};
+    }
+
     private Node ParseFactor()
     {
         var token = GetCurrent();
@@ -97,6 +118,11 @@ internal class AstParser
         {
             EatToken();
             return new Node(token);
+        }
+
+        if (token.Type == TokenType.Function)
+        {
+            return ParseFunctionCall();
         }
 
         if (token.Type == TokenType.Parenthesis && token.Value == "(")
@@ -127,6 +153,20 @@ internal class AstParser
         }
 
         logger.LogInformation($"{indent}Node: {node.Token.Value}");
+
+        if (node.Args.Count > 0)
+        {
+            var value = $"{indent}  Args: [";
+            foreach (var arg in node.Args)
+            {
+                value += $"{arg.Token.Value} ";
+            }
+
+            value = value.TrimEnd();
+
+            value += "]";
+            logger.LogInformation(value);
+        }
 
         if (node.Left != null)
         {

@@ -39,6 +39,23 @@ internal static class ExpressionBuilder
             return propertyAccess;
         }
 
+        if (node.Token.Type == TokenType.Function)
+        {
+            if (node.Token.Value.ToLower() == "contains")
+            {
+                var arg1 = GenerateExpressionFromNode<T>(node.Args[0], param);
+                var arg2 = GenerateExpressionFromNode<T>(node.Args[1], param);
+                return Expression.Call(arg1, typeof(string).GetMethod("Contains", new[] {typeof(string)}), arg2);
+            }
+
+            if (node.Token.Value.ToLower() == "startswith")
+            {
+                var arg1 = GenerateExpressionFromNode<T>(node.Args[0], param);
+                var arg2 = GenerateExpressionFromNode<T>(node.Args[1], param);
+                return Expression.Call(arg1, typeof(string).GetMethod("StartsWith", new[] {typeof(string)}), arg2);
+            }
+        }
+
         var left = GenerateExpressionFromNode<T>(node.Left, param);
         var right = GenerateExpressionFromNode<T>(node.Right, param);
 

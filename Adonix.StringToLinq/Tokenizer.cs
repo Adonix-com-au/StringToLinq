@@ -5,11 +5,13 @@ internal static class Tokenizer
     internal static List<Token> Parse(string input)
     {
         string[] comparisonOperators = {"eq", "ne", "lt", "gt", "le", "ge", "in", "has"};
-        string[] logicalOperators = {"and", "or", "and"};
+        string[] logicalOperators = {"and", "or", "not"};
         string[] arithmeticOperators = {"add", "sub", "mul", "div", "divby", "mod"};
+        string[] functions = {"contains", "startswith"};
 
         var tokens = new List<Token>();
 
+        var addComma = false;
         var index = 0;
         while (index < input.Length)
         {
@@ -53,11 +55,22 @@ internal static class Tokenizer
             while (index < input.Length && !char.IsWhiteSpace(input[index]) && input[index] != '(' &&
                    input[index] != ')')
             {
+                if (input[index] == ',')
+                {
+                    addComma = true;
+                    index++;
+                    continue;
+                }
+
                 token += input[index];
                 index++;
             }
 
-            if (comparisonOperators.Contains(token))
+            if (functions.Any(p => p.StartsWith(token)))
+            {
+                tokens.Add(new Token {Type = TokenType.Function, Value = token});
+            }
+            else if (comparisonOperators.Contains(token))
             {
                 tokens.Add(new Token {Type = TokenType.Operator, Value = token});
             }
@@ -73,13 +86,15 @@ internal static class Tokenizer
             {
                 tokens.Add(new Token {Type = TokenType.Literal, Value = token});
             }
-            else if (double.TryParse(token, out var number))
-            {
-                tokens.Add(new Token {Type = TokenType.Literal, Value = token});
-            }
             else
             {
                 tokens.Add(new Token {Type = TokenType.Variable, Value = token});
+            }
+
+            if (addComma)
+            {
+                addComma = false;
+                tokens.Add(new Token {Type = TokenType.Comma, Value = ","});
             }
         }
 
