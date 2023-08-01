@@ -19,7 +19,7 @@ internal static class ExpressionBuilder
 
         if (node.Token.Type == TokenType.Literal)
         {
-            if (double.TryParse(node.Token.Value, out var num))
+            if (int.TryParse(node.Token.Value, out var num))
             {
                 return Expression.Constant(num);
             }
@@ -41,23 +41,69 @@ internal static class ExpressionBuilder
 
         if (node.Token.Type == TokenType.Function)
         {
-            if (node.Token.Value.ToLower() == "contains")
+            if (node.Token.Value.ToLower() == Operators.Functions.Contains)
             {
                 var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
                 var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
                 return Expression.Call(arg1, typeof(string).GetMethod("Contains", new[] {typeof(string)}), arg2);
             }
 
-            if (node.Token.Value.ToLower() == "startswith")
+            if (node.Token.Value.ToLower() == Operators.Functions.StartsWith)
             {
                 var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
                 var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
                 return Expression.Call(arg1, typeof(string).GetMethod("StartsWith", new[] {typeof(string)}), arg2);
             }
+
+            if (node.Token.Value.ToLower() == Operators.Functions.EndsWith)
+            {
+                var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
+                var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
+                return Expression.Call(arg1, typeof(string).GetMethod("EndsWith", new[] {typeof(string)}), arg2);
+            }
+
+            if (node.Token.Value.ToLower() == Operators.Functions.Concat)
+            {
+                var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
+                var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
+                return Expression.Call(null, typeof(string).GetMethod("Concat", new[] {typeof(string), typeof(string)}),
+                    arg1, arg2);
+            }
+
+            if (node.Token.Value.ToLower() == Operators.Functions.IndexOf)
+            {
+                var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
+                var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
+                return Expression.Call(arg1, typeof(string).GetMethod("IndexOf", new[] {typeof(string)}), arg2);
+            }
+
+            //if (node.Token.Value.ToLower() == Operators.Functions.SubString)
+            //{
+            //    var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
+            //    var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
+            //    return Expression.Call(arg1, typeof(string).GetMethod("Substring", new[] {typeof(int)}), arg2);
+            //}
+
+            if (node.Token.Value.ToLower() == Operators.Functions.Length)
+            {
+                var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
+                return Expression.Property(arg1, "Length");
+            }
         }
 
         var left = GenerateExpressionFromNode<T>(node.Left, param);
         var right = GenerateExpressionFromNode<T>(node.Right, param);
+
+        if (node.Token.Type == TokenType.Operator)
+        {
+            switch (node.Token.Value)
+            {
+                case Operators.Logical.And:
+                    return Expression.AndAlso(left, right);
+                case Operators.Logical.Or:
+                    return Expression.OrElse(left, right);
+            }
+        }
 
         if (node.Token.Type == TokenType.Operator || node.Token.Type == TokenType.Logical)
         {
@@ -68,24 +114,30 @@ internal static class ExpressionBuilder
 
             switch (node.Token.Value)
             {
-                case "and":
+                case Operators.Logical.And:
                     return Expression.AndAlso(left, right);
-                case "or":
+                case Operators.Logical.Or:
                     return Expression.OrElse(left, right);
-                case "eq":
+            }
+
+            switch (node.Token.Value)
+            {
+                case Operators.Comparison.Equal:
                     return Expression.Equal(left, right);
-                case "ne":
+                case Operators.Comparison.NotEqual:
                     return Expression.NotEqual(left, right);
-                case "lt":
+                case Operators.Comparison.LessThan:
                     return Expression.LessThan(left, right);
-                case "gt":
+                case Operators.Comparison.GreaterThan:
                     return Expression.GreaterThan(left, right);
-                case "le":
+                case Operators.Comparison.LessThanOrEqual:
                     return Expression.LessThanOrEqual(left, right);
-                case "ge":
+                case Operators.Comparison.GreaterThanOrEqual:
                     return Expression.GreaterThanOrEqual(left, right);
-                case "in":
+                case Operators.Comparison.Has:
                     return Contains(left, right);
+                case Operators.Comparison.In:
+                    return Contains(right, left);
                 default:
                     throw new NotSupportedException($"Operator '{node.Token.Value}' is not supported.");
             }
@@ -93,32 +145,30 @@ internal static class ExpressionBuilder
 
         if (node.Token.Type == TokenType.Arithmetic)
         {
-            if (left.Type != right.Type)
+            if (left.Type != typeof(double))
             {
-                if (left.Type == typeof(int) && right.Type == typeof(double))
-                {
-                    left = Expression.Convert(left, typeof(double));
-                }
-                else if (right.Type == typeof(int) && left.Type == typeof(double))
-                {
-                    right = Expression.Convert(right, typeof(double));
-                }
+                left = Expression.Convert(left, typeof(double));
+            }
+
+            if (right.Type != typeof(double))
+            {
+                right = Expression.Convert(right, typeof(double));
             }
 
             switch (node.Token.Value)
             {
-                case "add":
+                case Operators.Arithmetic.Add:
                     return Expression.Add(left, right);
-                case "sub":
+                case Operators.Arithmetic.Sub:
                     return Expression.Subtract(left, right);
-                case "mul":
+                case Operators.Arithmetic.Mul:
                     return Expression.Multiply(left, right);
-                case "div":
+                case Operators.Arithmetic.Div:
                     return Expression.Divide(left, right);
-                case "divby":
-                    return Expression.Divide(Expression.Convert(left, typeof(decimal)),
-                        Expression.Convert(right, typeof(decimal)));
-                case "mod":
+                case Operators.Arithmetic.DivBy:
+                    //TODO: This seems wrong need to fix http://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html#_Toc31358950
+                    return Expression.Divide(left, right);
+                case Operators.Arithmetic.Mod:
                     return Expression.Modulo(left, right);
                 default:
                     throw new ArgumentException($"Unsupported operator {node.Token.Value}");
@@ -139,30 +189,36 @@ internal static class ExpressionBuilder
     private static ConstantExpression ToExprConstant(string value, Expression expr)
     {
         var type = expr.Type;
-        object val = value;
         if (type == typeof(int))
         {
-            return Expression.Constant(Convert.ToInt32(value), typeof(int));
+            return Expression.Constant(Convert.ToInt32(value), type);
         }
 
         if (type == typeof(string))
         {
-            return Expression.Constant(value, typeof(string));
+            return Expression.Constant(value, type);
+        }
+
+        if (type == typeof(Guid))
+        {
+            return Expression.Constant(Guid.Parse(value), type);
         }
 
         if (type == typeof(int))
         {
-            val = int.Parse(value);
-        }
-        else if (type == typeof(double))
-        {
-            val = double.Parse(value);
-        }
-        else if (type == typeof(bool))
-        {
-            val = bool.Parse(value);
+            return Expression.Constant(int.Parse(value), type);
         }
 
-        return Expression.Constant(val, type);
+        if (type == typeof(double))
+        {
+            return Expression.Constant(double.Parse(value), type);
+        }
+
+        if (type == typeof(bool))
+        {
+            return Expression.Constant(bool.Parse(value), type);
+        }
+
+        return null;
     }
 }

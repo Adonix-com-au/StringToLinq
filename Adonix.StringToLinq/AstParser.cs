@@ -8,7 +8,7 @@ internal class AstParser
     private int _index;
     private Node _root;
 
-    public AstParser(List<Token> tokens)
+    internal AstParser(List<Token> tokens)
     {
         _tokens = tokens;
     }
@@ -145,39 +145,46 @@ internal class AstParser
         Print(_root, logger);
     }
 
-    private void Print(Node node, ILogger logger, string indent = "")
+    private void Print(Node node, ILogger logger, int depth = 0)
     {
         if (node == null)
         {
             return;
         }
 
+        var indent = new string('\t', depth);
+
         logger.LogInformation($"{indent}Node: {node.Token.Value}");
 
-        if (node.Children.Length > 0)
+        if (node.Token.Type == TokenType.Function)
         {
-            var value = $"{indent}  Children: [";
-            foreach (var arg in node.Children)
+            if (node.Children.Length > 0)
             {
-                value += $"{arg.Token.Value} ";
+                var value = $"{indent}Children: [";
+                foreach (var arg in node.Children)
+                {
+                    value += $"{arg.Token.Value} ";
+                }
+
+                value = value.TrimEnd();
+
+                value += "]";
+                logger.LogInformation(value);
+            }
+        }
+        else
+        {
+            if (node.Left != null)
+            {
+                logger.LogInformation($"{indent}Left:");
+                Print(node.Left, logger, depth + 1);
             }
 
-            value = value.TrimEnd();
-
-            value += "]";
-            logger.LogInformation(value);
-        }
-
-        if (node.Left != null)
-        {
-            logger.LogInformation($"{indent}  Left:");
-            Print(node.Left, logger, indent + "    ");
-        }
-
-        if (node.Right != null)
-        {
-            logger.LogInformation($"{indent}  Right:");
-            Print(node.Right, logger, indent + "    ");
+            if (node.Right != null)
+            {
+                logger.LogInformation($"{indent}Right:");
+                Print(node.Right, logger, depth + 1);
+            }
         }
     }
 #endif

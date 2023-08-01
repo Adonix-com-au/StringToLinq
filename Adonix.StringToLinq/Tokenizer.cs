@@ -4,11 +4,6 @@ internal static class Tokenizer
 {
     internal static List<Token> Parse(string input)
     {
-        string[] comparisonOperators = {"eq", "ne", "lt", "gt", "le", "ge", "in", "has"};
-        string[] logicalOperators = {"and", "or", "not"};
-        string[] arithmeticOperators = {"add", "sub", "mul", "div", "divby", "mod"};
-        string[] functions = {"contains", "startswith"};
-
         var tokens = new List<Token>();
 
         var addComma = false;
@@ -19,6 +14,13 @@ internal static class Tokenizer
 
             if (char.IsWhiteSpace(input[index]))
             {
+                index++;
+                continue;
+            }
+
+            if (input[index] == ',')
+            {
+                tokens.Add(new Token {Type = TokenType.Comma, Value = ","});
                 index++;
                 continue;
             }
@@ -66,19 +68,19 @@ internal static class Tokenizer
                 index++;
             }
 
-            if (functions.Any(p => p.StartsWith(token)))
+            if (Operators.Functions.collection.Contains(token))
             {
                 tokens.Add(new Token {Type = TokenType.Function, Value = token});
             }
-            else if (comparisonOperators.Contains(token))
+            else if (Operators.Comparison.collection.Contains(token))
             {
                 tokens.Add(new Token {Type = TokenType.Operator, Value = token});
             }
-            else if (logicalOperators.Contains(token))
+            else if (Operators.Logical.collection.Contains(token))
             {
                 tokens.Add(new Token {Type = TokenType.Logical, Value = token});
             }
-            else if (arithmeticOperators.Contains(token))
+            else if (Operators.Arithmetic.collection.Contains(token))
             {
                 tokens.Add(new Token {Type = TokenType.Arithmetic, Value = token});
             }
