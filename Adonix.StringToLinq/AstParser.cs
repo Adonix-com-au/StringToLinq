@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-
-namespace Adonix.StringToLinq;
+﻿namespace Adonix.StringToLinq;
 
 internal class AstParser
 {
@@ -138,54 +136,4 @@ internal class AstParser
 
         throw new Exception("Expected a variable, literal or parenthesis, got " + GetCurrent().Type);
     }
-
-#if DEBUG
-    public void Print(ILogger logger)
-    {
-        Print(_root, logger);
-    }
-
-    private void Print(Node node, ILogger logger, int depth = 0)
-    {
-        if (node == null)
-        {
-            return;
-        }
-
-        var indent = new string('\t', depth);
-
-        logger.LogInformation($"{indent}Node: {node.Token.Value}");
-
-        if (node.Token.Type == TokenType.Function)
-        {
-            if (node.Children.Length > 0)
-            {
-                var value = $"{indent}Children: [";
-                foreach (var arg in node.Children)
-                {
-                    value += $"{arg.Token.Value} ";
-                }
-
-                value = value.TrimEnd();
-
-                value += "]";
-                logger.LogInformation(value);
-            }
-        }
-        else
-        {
-            if (node.Left != null)
-            {
-                logger.LogInformation($"{indent}Left:");
-                Print(node.Left, logger, depth + 1);
-            }
-
-            if (node.Right != null)
-            {
-                logger.LogInformation($"{indent}Right:");
-                Print(node.Right, logger, depth + 1);
-            }
-        }
-    }
-#endif
 }
