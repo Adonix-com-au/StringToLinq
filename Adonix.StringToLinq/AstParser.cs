@@ -16,7 +16,7 @@ internal class AstParser
         var index = _index + offset;
         if (index >= _tokens.Count)
         {
-            return new Token {Type = TokenType.EOF};
+            return new Token(TokenType.EOF, null);
         }
 
         return _tokens[index];

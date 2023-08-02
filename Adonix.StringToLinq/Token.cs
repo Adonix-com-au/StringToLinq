@@ -16,16 +16,12 @@ internal enum TokenType
 
 internal class Token
 {
-    public Token()
-    {
-    }
-
-    public Token(string value, TokenType type)
+    internal Token(TokenType type, string value)
     {
         Value = value;
         Type = type;
     }
 
-    public string Value { get; set; }
-    public TokenType Type { get; set; }
+    internal string Value { get; set; }
+    internal TokenType Type { get; set; }
 }
