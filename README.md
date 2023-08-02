@@ -2,6 +2,8 @@
 
 StringToLinq is a simple .NET library that transforms string expressions into Linq Expressions. This library enables dynamic generation of complex Linq queries from string inputs, providing a level of flexibility for Linq-based querying.
 
+[Nuget StringToLinq](https://www.nuget.org/packages/Adonix.StringToLinq/)
+
 ## Features
 
 - Converts string expressions into Linq Expressions.
