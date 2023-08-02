@@ -41,7 +41,8 @@ internal static class ExpressionBuilder
         //Collection starts as string array
         if (node.Token.Type == TokenType.Collection)
         {
-            return Expression.Constant(node.Token.Value.Split(','));
+            var collection = node.Token.Value.Split(',').Select(p => p.Trim(' ', '"')).ToList().ToArray();
+            return Expression.Constant(collection);
         }
 
         if (node.Token.Type == TokenType.Function)
@@ -253,6 +254,8 @@ internal static class ExpressionBuilder
             {
                 return Expression.Constant(Array.ConvertAll(stringArray, s => double.Parse(s)));
             }
+
+            return constant;
         }
         
         return null;

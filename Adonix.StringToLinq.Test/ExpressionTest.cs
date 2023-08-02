@@ -22,6 +22,7 @@ public class ExpressionTest
     public void TestList()
     {
         TestHelper.AssertQuery("Salary in [50000, 60000]", "x => value(System.Double[]).Contains(x.Salary)", 2);
+        TestHelper.AssertQuery("Department in [\"Infrastructure\", \"IT\"]", "x => value(System.String[]).Contains(x.Department)", 3);
     }
 
     [Fact]

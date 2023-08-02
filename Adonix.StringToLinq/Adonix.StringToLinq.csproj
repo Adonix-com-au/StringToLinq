@@ -13,6 +13,7 @@
     <RepositoryUrl>https://github.com/Adonix-com-au/StringToLinq</RepositoryUrl>
     <PackageTags>StringToLinq</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
