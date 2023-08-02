@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Adonix.StringToLinq.Caching\Adonix.StringToLinq.Caching.csproj" />
     <ProjectReference Include="..\Adonix.StringToLinq\Adonix.StringToLinq.csproj" />
   </ItemGroup>
 
