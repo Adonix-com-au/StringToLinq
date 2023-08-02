@@ -12,23 +12,20 @@ internal static class ExpressionBuilder
         return Expression.Lambda<Func<T, bool>>(body, parameter);
     }
 
-    private static Expression GenerateExpressionFromNode<T>(Node node, ParameterExpression param, Type leftType = null)
+    private static Expression GenerateExpressionFromNode<T>(Node node, ParameterExpression param)
     {
         if (node == null)
         {
             return null;
         }
 
+        // Literal starts as string
         if (node.Token.Type == TokenType.Literal)
         {
-            if (leftType != null)
-            {
-                return ToExprConstant(node.Token.Value, leftType);
-            }
-
             return Expression.Constant(node.Token.Value);
         }
 
+        //Variable from T
         if (node.Token.Type == TokenType.Variable)
         {
             var parts = node.Token.Value.Split('.');
@@ -41,24 +38,10 @@ internal static class ExpressionBuilder
             return propertyAccess;
         }
 
+        //Collection starts as string array
         if (node.Token.Type == TokenType.Collection)
         {
-            var collection = node.Token.Value.Split(',');
-
-            if (leftType != null)
-            {
-                if (leftType == typeof(int))
-                {
-                    return Expression.Constant(Array.ConvertAll(collection, s => int.Parse(s)));
-                }
-
-                if (leftType == typeof(double))
-                {
-                    return Expression.Constant(Array.ConvertAll(collection, s => double.Parse(s)));
-                }
-            }
-
-            return Expression.Constant(collection);
+            return Expression.Constant(node.Token.Value.Split(','));
         }
 
         if (node.Token.Type == TokenType.Function)
@@ -85,9 +68,9 @@ internal static class ExpressionBuilder
         }
 
         var left = GenerateExpressionFromNode<T>(node.Left, param);
-        var right = GenerateExpressionFromNode<T>(node.Right, param, left.Type);
+        var right = GenerateExpressionFromNode<T>(node.Right, param);
 
-        if (node.Token.Type == TokenType.Operator)
+        if (node.Token.Type == TokenType.Logical)
         {
             switch (node.Token.Value)
             {
@@ -98,19 +81,27 @@ internal static class ExpressionBuilder
             }
         }
 
-        if (node.Token.Type == TokenType.Operator || node.Token.Type == TokenType.Logical)
+        if (node.Token.Type == TokenType.Operator)
         {
-            if (left.Type != right.Type && node.Right.Token.Type == TokenType.Literal)
+            if (left.Type != right.Type)
             {
-                right = ToExprConstant(node.Right.Token.Value, left.Type);
-            }
+                if (node.Left.Token.Type == TokenType.Literal)
+                {
+                    left = ToExprConstant(node.Left.Token.Value, right.Type);
+                }
+                if (node.Right.Token.Type == TokenType.Literal)
+                {
+                    right = ToExprConstant(node.Right.Token.Value, left.Type);
+                }
 
-            switch (node.Token.Value)
-            {
-                case Operators.Logical.And:
-                    return Expression.AndAlso(left, right);
-                case Operators.Logical.Or:
-                    return Expression.OrElse(left, right);
+                if (node.Left.Token.Type == TokenType.Collection)
+                {
+                    left = ConvertArrayTo(left, right.Type);
+                }
+                if (node.Right.Token.Type == TokenType.Collection)
+                {
+                    right = ConvertArrayTo(right, left.Type);
+                }
             }
 
             switch (node.Token.Value)
@@ -138,14 +129,15 @@ internal static class ExpressionBuilder
 
         if (node.Token.Type == TokenType.Arithmetic)
         {
+            //All Arithmetic should be double
             if (left.Type != typeof(double))
             {
-                left = Expression.Convert(left, typeof(double));
+                left = ConvertTo(node.Left, left, typeof(double));
             }
 
             if (right.Type != typeof(double))
             {
-                right = Expression.Convert(right, typeof(double));
+                right = ConvertTo(node.Right, right, typeof(double));
             }
 
             switch (node.Token.Value)
@@ -168,7 +160,7 @@ internal static class ExpressionBuilder
             }
         }
 
-        return null;
+        throw new ArgumentException($"Invalid Expression.");
     }
 
     private static Expression Contains(Expression left, Expression right)
@@ -240,6 +232,43 @@ internal static class ExpressionBuilder
         }
 
         return null;
+    }
+
+    internal static ConstantExpression ConvertArrayTo(Expression expression, Type type)
+    {
+        if (expression is ConstantExpression constant && expression.Type.IsArray && constant.Value is string[] stringArray)
+        {
+            if (type == typeof(int))
+            {
+                return Expression.Constant(Array.ConvertAll(stringArray, s => int.Parse(s)));
+            }
+
+            if (type == typeof(double))
+            {
+                return Expression.Constant(Array.ConvertAll(stringArray, s => double.Parse(s)));
+            }
+        }
+        
+        return null;
+    }
+
+    internal static ConstantExpression ConvertLiteralTo(Node node, Type type)
+    {
+        if (node.Token.Type == TokenType.Literal)
+        {
+            return ToExprConstant(node.Token.Value, type);
+        }
+        return null;
+    }
+
+    internal static Expression ConvertTo(Node node, Expression expression, Type type)
+    {
+        Expression converted = ConvertLiteralTo(node, type);
+        if (converted == null)
+        {
+            converted = Expression.Convert(expression, type);
+        }
+        return converted;
     }
 
     //Functions
