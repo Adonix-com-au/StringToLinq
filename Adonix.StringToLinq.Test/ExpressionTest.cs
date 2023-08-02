@@ -1,3 +1,4 @@
+using Adonix.StringToLinq.Test;
 using Microsoft.Extensions.Logging;
 using Xunit;
 using Xunit.Abstractions;
@@ -16,209 +17,76 @@ public class ExpressionTest
     [Fact]
     public void TestEqual()
     {
-        var query = "Name eq \"Alex Mitrakis\"";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.True(logger.Contains("x => (x.Name == \"Alex Mitrakis\")"));
-        Assert.Equal(1, results.Count());
+        TestHelper.AssertQuery("FirstName eq \"Alex\"", "x => (x.FirstName == \"Alex\")", 1, logger);
+        TestHelper.AssertQuery("\"Alex\" eq FirstName", "x => (\"Alex\" == x.FirstName)", 1, logger);
+    }
+
+    [Fact]
+    public void TestGreaterThanOrEqual()
+    {
+        TestHelper.AssertQuery("Salary ge 50000", "x => (x.Salary >= 50000)", 4, logger);
     }
 
     [Fact]
     public void TestList()
     {
-        var query = "Age in [25, 23, 24]";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.Equal(4, results.Count());
+        TestHelper.AssertQuery("Salary in [50000, 60000]", "x => value(System.Double[]).Contains(x.Salary)", 2, logger);
     }
 
     [Fact]
     public void TestDate()
     {
-        var query = "Birthday eq \"28/08/1999\"";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.Equal(1, results.Count());
-    }
-
-    [Fact]
-    public void TestFunctionContains()
-    {
-        var query = "contains(Name, \"Alex\")";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.Equal(1, results.Count());
-    }
-
-    [Fact]
-    public void TestFunctionStartsWith()
-    {
-        var query = "startswith(Name, \"Alex\")";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.Equal(1, results.Count());
-    }
-
-    [Fact]
-    public void TestFunctionIndexOf()
-    {
-        var query = "indexof(Name, \"A\") eq 0";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.Equal(2, results.Count());
-    }
-
-    [Fact]
-    public void TestFunctionEndsWith()
-    {
-        var query = "endswith(Name, \"Mitrakis\")";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.Equal(1, results.Count());
-    }
-
-    [Fact]
-    public void TestFunctionLength()
-    {
-        var query = "length(Name) gt 0";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.Equal(4, results.Count());
-    }
-
-    [Fact]
-    public void TestFunctionConcat()
-    {
-        var query = "concat(\"A\",\"A\") eq \"AA\"";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.Equal(4, results.Count());
-    }
-
-    [Fact]
-    public void TestFunctionDate()
-    {
-        var query = "day(Birthday) eq 28";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.Equal(1, results.Count());
+        TestHelper.AssertQuery("Birthday eq \"28/08/1999\"", "x => (x.Birthday == 28/08/1999 12:00:00 AM)", 1, logger);
     }
 
     [Fact]
     public void TestNotEqual()
     {
-        var query = "Name ne \"Alex Mitrakis\"";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.True(logger.Contains("x => (x.Name != \"Alex Mitrakis\")"));
-        Assert.Equal(3, results.Count());
+        TestHelper.AssertQuery("FirstName ne \"Alex\"", "x => (x.FirstName != \"Alex\")", 3, logger);
     }
 
     [Fact]
     public void TestSub()
     {
-        var query = "Age sub 20 lt 20";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.True(logger.Contains("x => ((Convert(x.Age, Double) - Convert(20, Double)) < 20)"));
-        Assert.Equal(4, results.Count());
-        Assert.Equal(25, results.FirstOrDefault().Age);
+        TestHelper.AssertQuery("Salary sub 80000 le 0", "x => ((x.Salary - 80000) <= 0)", 3, logger);
     }
 
     [Fact]
     public void TestDiv()
     {
-        var query = "Age div 12 eq 2";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.True(logger.Contains("x => ((Convert(x.Age, Double) / Convert(12, Double)) == 2)"));
-        Assert.Equal(1, results.Count());
-        Assert.Equal(24, results.FirstOrDefault().Age);
+        TestHelper.AssertQuery("Salary div 10000 eq 5", "x => ((x.Salary / 10000) == 5)", 1, logger);
     }
 
     [Fact]
-    public void TestMulti()
+    public void TestOr()
     {
-        var query = "Name eq \"Alex Mitrakis\" or Name eq \"Amy Richards\"";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.True(logger.Contains("x => ((x.Name == \"Alex Mitrakis\") OrElse (x.Name == \"Amy Richards\"))"));
-        Assert.Equal(2, results.Count());
+        TestHelper.AssertQuery("FirstName eq \"Alex\" or FirstName eq \"Amy\"", 
+            "x => ((x.FirstName == \"Alex\") OrElse (x.FirstName == \"Amy\"))", 2, logger);
     }
 
     [Fact]
     public void TestIn()
     {
-        var query = "Name in \"Alex Mitrakis is cool\"";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.True(logger.Contains("x => \"Alex Mitrakis is cool\".Contains(x.Name)"));
-        Assert.Equal(1, results.Count());
+        TestHelper.AssertQuery("FirstName in \"Alex is cool\"", "x => \"Alex is cool\".Contains(x.FirstName)", 1, logger);
     }
 
     [Fact]
     public void TestHas()
     {
-        var query = "Name has \"Alex\"";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.True(logger.Contains("x => x.Name.Contains(\"Alex\")"));
-        Assert.Equal(1, results.Count());
+        TestHelper.AssertQuery("FirstName has \"A\"", "x => x.FirstName.Contains(\"A\")", 2, logger);
     }
 
     [Fact]
     public void TestGroup()
     {
-        var query = "Age eq 24 or (Name eq \"Amy Richards\" and Department eq \"CEO\")";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.True(logger.Contains(
-            "x => ((x.Age == 24) OrElse ((x.Name == \"Amy Richards\") AndAlso (x.Department == \"CEO\")))"));
-        Assert.Equal(2, results.Count());
+        TestHelper.AssertQuery("Salary gt 100000 and (FirstName eq \"Amy\" or Department eq \"CEO\")", 
+            "x => ((x.Salary > 100000) AndAlso ((x.FirstName == \"Amy\") OrElse (x.Department == \"CEO\")))", 1, logger);
     }
 
     [Fact]
     public void TestNestedProperty()
     {
-        var query = "Employer.Name eq \"Test Company\"";
-        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
-        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
-        Assert.True(logger.Contains("x => (x.Employer.Name == \"Test Company\")"));
-        Assert.Equal(4, results.Count());
-    }
-}
-
-public class TestLogger : ILogger
-{
-    private readonly List<string> logs;
-    private readonly ITestOutputHelper output;
-
-    public TestLogger(ITestOutputHelper output)
-    {
-        this.output = output;
-        logs = new List<string>();
-    }
-
-    public IDisposable BeginScope<TState>(TState state)
-    {
-        throw new NotImplementedException();
-    }
-
-    public bool IsEnabled(LogLevel logLevel)
-    {
-        return true;
-    }
-
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
-        Func<TState, Exception?, string> formatter)
-    {
-        var value = state.ToString();
-        logs.Add(value);
-        output.WriteLine(value);
-    }
-
-    public bool Contains(string value)
-    {
-        return logs.Any(x => x == value);
+        TestHelper.AssertQuery("Employer.Name eq \"Test Company\"",
+            "x => (x.Employer.Name == \"Test Company\")", 4, logger);
     }
 }
