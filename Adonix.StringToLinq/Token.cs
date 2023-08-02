@@ -9,6 +9,7 @@ internal enum TokenType
     Function,
     Comma,
     Variable,
+    Collection,
     Parenthesis,
     EOF
 }

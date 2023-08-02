@@ -54,6 +54,7 @@ internal static class Operators
 
     internal static class Functions
     {
+        // String Functions
         internal const string Contains = "contains";
 
         internal const string StartsWith = "startswith";
@@ -68,6 +69,11 @@ internal static class Operators
 
         internal const string SubString = "substring";
 
-        internal static string[] collection = {Contains, StartsWith, EndsWith, Concat, Length, IndexOf, SubString};
+
+        // Date Functions
+
+        internal const string Day = "day";
+
+        internal static string[] collection = {Contains, StartsWith, EndsWith, Concat, Length, IndexOf, SubString, Day };
     }
 }

@@ -114,7 +114,7 @@ internal class AstParser
     private Node ParseFactor()
     {
         var token = GetCurrent();
-        if (token.Type == TokenType.Variable || token.Type == TokenType.Literal)
+        if (token.Type == TokenType.Variable || token.Type == TokenType.Literal || token.Type == TokenType.Collection)
         {
             EatToken();
             return new Node(token);

@@ -36,6 +36,24 @@ internal static class Tokenizer
                 continue;
             }
 
+            if (input[index] == '[')
+            {
+                index++;
+                while (index < input.Length && input[index] != ']')
+                {
+                    token += input[index];
+                    index++;
+                }
+
+                if (index < input.Length)
+                {
+                    index++;
+                }
+
+                tokens.Add(new Token {Type = TokenType.Collection, Value = token});
+                continue;
+            }
+
             if (input[index] == '"')
             {
                 index++;

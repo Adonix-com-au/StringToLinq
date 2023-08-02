@@ -24,9 +24,18 @@ public class ExpressionTest
     }
 
     [Fact]
+    public void TestList()
+    {
+        var query = "Age in [25, 23, 24]";
+        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
+        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
+        Assert.Equal(4, results.Count());
+    }
+
+    [Fact]
     public void TestDate()
     {
-        var query = "Birthday eq \"1999-08-28\"";
+        var query = "Birthday eq \"28/08/1999\"";
         var predicate = StringExpression.ToPredicate<Employee>(query, logger);
         var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
         Assert.Equal(1, results.Count());
@@ -84,6 +93,15 @@ public class ExpressionTest
         var predicate = StringExpression.ToPredicate<Employee>(query, logger);
         var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
         Assert.Equal(4, results.Count());
+    }
+
+    [Fact]
+    public void TestFunctionDate()
+    {
+        var query = "day(Birthday) eq 28";
+        var predicate = StringExpression.ToPredicate<Employee>(query, logger);
+        var results = new EmployeeData().GetEmployees().Where(predicate).AsEnumerable();
+        Assert.Equal(1, results.Count());
     }
 
     [Fact]

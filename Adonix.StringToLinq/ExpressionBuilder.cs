@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.Data;
+using System.Linq.Expressions;
 using Adonix.StringToLinq;
 
 internal static class ExpressionBuilder
@@ -10,7 +11,7 @@ internal static class ExpressionBuilder
         return Expression.Lambda<Func<T, bool>>(body, parameter);
     }
 
-    private static Expression GenerateExpressionFromNode<T>(Node node, ParameterExpression param)
+    private static Expression GenerateExpressionFromNode<T>(Node node, ParameterExpression param, Type leftType = null)
     {
         if (node == null)
         {
@@ -19,9 +20,9 @@ internal static class ExpressionBuilder
 
         if (node.Token.Type == TokenType.Literal)
         {
-            if (int.TryParse(node.Token.Value, out var num))
+            if (leftType != null)
             {
-                return Expression.Constant(num);
+                return ToExprConstant(node.Token.Value, leftType);
             }
 
             return Expression.Constant(node.Token.Value);
@@ -39,34 +40,54 @@ internal static class ExpressionBuilder
             return propertyAccess;
         }
 
+        if (node.Token.Type == TokenType.Collection)
+        {
+            var collection = node.Token.Value.Split(',');
+
+            if (leftType != null)
+            {
+                if (leftType == typeof(int))
+                {
+                    return Expression.Constant(Array.ConvertAll(collection, s => int.Parse(s)));
+                }
+
+                if (leftType == typeof(double))
+                {
+                    return Expression.Constant(Array.ConvertAll(collection, s => double.Parse(s)));
+                }
+            }
+
+            return Expression.Constant(collection);
+        }
+
         if (node.Token.Type == TokenType.Function)
         {
             if (node.Token.Value.ToLower() == Operators.Functions.Contains)
             {
                 var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
                 var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
-                return Expression.Call(arg1, typeof(string).GetMethod("Contains", new[] {typeof(string)}), arg2);
+                return Expression.Call(arg1, typeof(string).GetMethod("Contains", new[] { typeof(string) }), arg2);
             }
 
             if (node.Token.Value.ToLower() == Operators.Functions.StartsWith)
             {
                 var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
                 var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
-                return Expression.Call(arg1, typeof(string).GetMethod("StartsWith", new[] {typeof(string)}), arg2);
+                return Expression.Call(arg1, typeof(string).GetMethod("StartsWith", new[] { typeof(string) }), arg2);
             }
 
             if (node.Token.Value.ToLower() == Operators.Functions.EndsWith)
             {
                 var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
                 var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
-                return Expression.Call(arg1, typeof(string).GetMethod("EndsWith", new[] {typeof(string)}), arg2);
+                return Expression.Call(arg1, typeof(string).GetMethod("EndsWith", new[] { typeof(string) }), arg2);
             }
 
             if (node.Token.Value.ToLower() == Operators.Functions.Concat)
             {
                 var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
                 var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
-                return Expression.Call(null, typeof(string).GetMethod("Concat", new[] {typeof(string), typeof(string)}),
+                return Expression.Call(null, typeof(string).GetMethod("Concat", new[] { typeof(string), typeof(string) }),
                     arg1, arg2);
             }
 
@@ -74,25 +95,51 @@ internal static class ExpressionBuilder
             {
                 var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
                 var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
-                return Expression.Call(arg1, typeof(string).GetMethod("IndexOf", new[] {typeof(string)}), arg2);
+                return Expression.Call(arg1, typeof(string).GetMethod("IndexOf", new[] { typeof(string) }), arg2);
             }
 
-            //if (node.Token.Value.ToLower() == Operators.Functions.SubString)
-            //{
-            //    var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
-            //    var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
-            //    return Expression.Call(arg1, typeof(string).GetMethod("Substring", new[] {typeof(int)}), arg2);
-            //}
+            if (node.Token.Value.ToLower() == Operators.Functions.SubString)
+            {
+                var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
+                var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
+                return Expression.Call(arg1, typeof(string).GetMethod("Substring", new[] { typeof(int) }), arg2);
+            }
 
             if (node.Token.Value.ToLower() == Operators.Functions.Length)
             {
                 var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
                 return Expression.Property(arg1, "Length");
             }
+
+            if (node.Token.Value.ToLower() == Operators.Functions.Day)
+            {
+                var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
+                if (arg1 is ConstantExpression constant)
+                {
+                    if (constant.Value is string value)
+                    {
+                        arg1 = ToExprConstant(value, typeof(DateTime));
+                    }
+                }
+                return Expression.Property(arg1, "Day");
+            }
+
+            if (node.Token.Value.ToLower() == Operators.Functions.Day)
+            {
+                var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
+                if (arg1 is ConstantExpression constant)
+                {
+                    if (constant.Value is string value)
+                    {
+                        arg1 = ToExprConstant(value, typeof(DateTime));
+                    }
+                }
+                return Expression.Property(arg1, "Day");
+            }
         }
 
         var left = GenerateExpressionFromNode<T>(node.Left, param);
-        var right = GenerateExpressionFromNode<T>(node.Right, param);
+        var right = GenerateExpressionFromNode<T>(node.Right, param, left.Type);
 
         if (node.Token.Type == TokenType.Operator)
         {
@@ -109,7 +156,7 @@ internal static class ExpressionBuilder
         {
             if (left.Type != right.Type && node.Right.Token.Type == TokenType.Literal)
             {
-                right = ToExprConstant(node.Right.Token.Value, left);
+                right = ToExprConstant(node.Right.Token.Value, left.Type);
             }
 
             switch (node.Token.Value)
@@ -180,15 +227,37 @@ internal static class ExpressionBuilder
 
     private static Expression Contains(Expression left, Expression right)
     {
-        var propertyType = left.Type;
-        var containsMethod = propertyType.GetMethod("Contains", new[] {typeof(string)});
-        var call = Expression.Call(left, containsMethod, right);
-        return Expression.Call(left, containsMethod, right);
+        Expression contains = null;
+        // If left is a string, use the string's Contains method.
+        if (left.Type == typeof(string))
+        {
+            // If right is not a string, convert it to string.
+            if (right.Type != typeof(string))
+            {
+                right = Expression.Call(right, right.Type.GetMethod("ToString", Type.EmptyTypes));
+            }
+
+            var propertyType = left.Type;
+            var containsMethod = propertyType.GetMethod("Contains", new[] {typeof(string)});
+            return Expression.Call(left, containsMethod, right);
+        }
+
+        // If left is a collection, use the Enumerable's Contains method.
+        else if (left.Type.GetInterfaces().Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
+        {
+            Type elementType = left.Type.GetElementType() ?? left.Type.GetGenericArguments().First();
+            var containsMethod = typeof(Enumerable).GetMethods()
+                .First(m => m.Name == "Contains" && m.GetParameters().Count() == 2)
+                .MakeGenericMethod(elementType);
+
+            return Expression.Call(null, containsMethod, left, right);
+        }
+
+        return null;
     }
 
-    private static ConstantExpression ToExprConstant(string value, Expression expr)
+    private static ConstantExpression ToExprConstant(string value, Type type)
     {
-        var type = expr.Type;
         if (type == typeof(int))
         {
             return Expression.Constant(Convert.ToInt32(value), type);
@@ -207,6 +276,11 @@ internal static class ExpressionBuilder
         if (type == typeof(int))
         {
             return Expression.Constant(int.Parse(value), type);
+        }
+
+        if (type == typeof(DateTime))
+        {
+            return Expression.Constant(DateTime.Parse(value), type);
         }
 
         if (type == typeof(double))
