@@ -11,5 +11,11 @@ namespace Adonix.StringToLinq.Test
             Assert.Equal(expectedPredicate, predicate.ToString());
             Assert.Equal(expectedCount, results.Count());
         }
+
+        public static void AssertQueryExpection<T>(string query, string expectedMessage) where T : Exception
+        {
+            var ex = Assert.Throws<T>(() => { StringExpression.ToPredicate<Employee>(query); });
+            Assert.Equal(expectedMessage, ex.Message);
+        }
     }
 }

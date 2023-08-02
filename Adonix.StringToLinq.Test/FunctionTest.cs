@@ -10,6 +10,7 @@ public class FunctionTest
     public void TestContains()
     {
         TestHelper.AssertQuery("contains(FirstName, \"Alex\")", "x => x.FirstName.Contains(\"Alex\")", 1);
+        TestHelper.AssertQueryExpection<ArgumentException>("contains(FirstName, FirstName, FirstName)", "Contains requires 2 parameters");
     }
 
     [Fact]

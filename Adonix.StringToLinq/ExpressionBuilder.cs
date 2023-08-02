@@ -64,6 +64,8 @@ internal static class ExpressionBuilder
                     return Length<T>(node, param);
                 case Operators.Functions.Day:
                     return Day<T>(node, param);
+                default:
+                    throw new NotSupportedException($"Function '{node.Token.Value}' is not supported.");
             }
         }
 
@@ -78,6 +80,8 @@ internal static class ExpressionBuilder
                     return Expression.AndAlso(left, right);
                 case Operators.Logical.Or:
                     return Expression.OrElse(left, right);
+                default:
+                    throw new NotSupportedException($"Logical Operator '{node.Token.Value}' is not supported.");
             }
         }
 
@@ -156,7 +160,7 @@ internal static class ExpressionBuilder
                 case Operators.Arithmetic.Mod:
                     return Expression.Modulo(left, right);
                 default:
-                    throw new ArgumentException($"Unsupported operator {node.Token.Value}");
+                    throw new NotSupportedException($"Unsupported operator {node.Token.Value}");
             }
         }
 
@@ -193,6 +197,8 @@ internal static class ExpressionBuilder
 
         return null;
     }
+
+    #region Convert
 
     private static ConstantExpression ToExprConstant(string value, Type type)
     {
@@ -271,13 +277,15 @@ internal static class ExpressionBuilder
         return converted;
     }
 
-    //Functions
+    #endregion
+
+    #region Functions
 
     internal static MemberExpression Length<T>(Node node, ParameterExpression param)
     {
         if (node.Children.Length != 1)
         {
-            throw new ArgumentException("");
+            throw new ArgumentException("Length requires 1 parameter");
         }
 
         var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
@@ -288,7 +296,7 @@ internal static class ExpressionBuilder
     {
         if (node.Children.Length != 2)
         {
-            throw new ArgumentException("");
+            throw new ArgumentException("Substring requires 2 parameter");
         }
 
         var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
@@ -300,7 +308,7 @@ internal static class ExpressionBuilder
     {
         if (node.Children.Length != 1)
         {
-            throw new ArgumentException("");
+            throw new ArgumentException("Day requires 1 parameter");
         }
         var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
         if (arg1 is ConstantExpression constant)
@@ -317,7 +325,7 @@ internal static class ExpressionBuilder
     {
         if (node.Children.Length != 2)
         {
-            throw new ArgumentException("");
+            throw new ArgumentException("Contains requires 2 parameters");
         }
         var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
         var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
@@ -328,7 +336,7 @@ internal static class ExpressionBuilder
     {
         if (node.Children.Length != 2)
         {
-            throw new ArgumentException("");
+            throw new ArgumentException("StartsWith requires 2 parameters");
         }
         var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
         var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
@@ -339,7 +347,7 @@ internal static class ExpressionBuilder
     {
         if (node.Children.Length != 2)
         {
-            throw new ArgumentException("");
+            throw new ArgumentException("EndsWith requires 2 parameters");
         }
         var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
         var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
@@ -350,7 +358,7 @@ internal static class ExpressionBuilder
     {
         if (node.Children.Length != 2)
         {
-            throw new ArgumentException("");
+            throw new ArgumentException("Concat requires 2 parameters");
         }
         var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
         var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
@@ -361,10 +369,12 @@ internal static class ExpressionBuilder
     {
         if (node.Children.Length != 2)
         {
-            throw new ArgumentException("");
+            throw new ArgumentException("IndexOf requires 2 parameters");
         }
         var arg1 = GenerateExpressionFromNode<T>(node.Children[0], param);
         var arg2 = GenerateExpressionFromNode<T>(node.Children[1], param);
         return Expression.Call(arg1, typeof(string).GetMethod("IndexOf", new[] { typeof(string) }), arg2);
     }
+
+    #endregion
 }
