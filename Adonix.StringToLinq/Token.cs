@@ -22,6 +22,6 @@ internal class Token
         Type = type;
     }
 
-    internal string Value { get; set; }
-    internal TokenType Type { get; set; }
+    internal string Value { get; }
+    internal TokenType Type { get; }
 }
